@@ -33,6 +33,8 @@ const Navbar: React.FC = () => {
     return pathname === href
   }
 
+
+  
   /* ================= CLOSE USER MENU ON OUTSIDE CLICK ================= */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
