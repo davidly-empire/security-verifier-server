@@ -95,3 +95,5 @@ def delete_scan_point(scan_point_id: str):
 
     supabase.table("scan_points").delete().eq("id", scan_point_id).execute()
     return None
+
+

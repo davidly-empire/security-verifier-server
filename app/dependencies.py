@@ -20,3 +20,4 @@ def admin_only(user: dict = Depends(get_current_user)):
     if user["role"] != "ADMIN":
         raise HTTPException(status_code=403, detail="Only admin allowed")
     return user
+

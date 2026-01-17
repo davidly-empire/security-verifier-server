@@ -7,3 +7,4 @@ try:
 except Exception as e:
     print("❌ DB Connection Failed")
     print(e)
+

@@ -14,3 +14,4 @@ class FactoryResponse(BaseModel):
     location: Optional[str] = None
     is_active: Optional[bool] = True
     created_at: Optional[str] = None
+

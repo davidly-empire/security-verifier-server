@@ -34,3 +34,4 @@ def login(data: LoginRequest):
         "role": user["role"],
         "name": user["name"]
     }
+

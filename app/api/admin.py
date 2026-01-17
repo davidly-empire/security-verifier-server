@@ -8,3 +8,4 @@ def get_dashboard(user: dict = Depends(admin_only)):
     return {
         "message": f"Welcome {user['user_id']}! You are an {user['role']}"
     }
+

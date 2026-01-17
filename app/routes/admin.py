@@ -35,3 +35,4 @@ def get_dashboard(current_user: dict = Depends(admin_only)):
     """
     data = generate_dashboard_data()
     return data
+

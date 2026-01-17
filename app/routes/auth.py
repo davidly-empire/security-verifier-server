@@ -51,3 +51,4 @@ async def login(payload: LoginRequest):
             "name": user["name"]
         }
     )
+

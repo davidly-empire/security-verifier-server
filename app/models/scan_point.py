@@ -15,3 +15,4 @@ class ScanPoint(BaseModel):
 
     class Config:
         from_attributes = True  # Updated for Pydantic v2
+

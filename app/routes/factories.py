@@ -53,3 +53,4 @@ def delete_factory(factory_code: str):
     
     supabase.table("factories").delete().eq("factory_code", factory_code).execute()
     return {"message": "Factory deleted successfully"}
+
