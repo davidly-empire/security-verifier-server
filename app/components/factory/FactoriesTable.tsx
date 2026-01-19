@@ -17,6 +17,8 @@ export const FactoriesTable = () => {
   const [editName, setEditName] = useState('')
   const [editLocation, setEditLocation] = useState('')
 
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+
   // -----------------------
   // Load factories from backend
   // -----------------------
@@ -24,7 +26,7 @@ export const FactoriesTable = () => {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('http://127.0.0.1:8000/factories')
+      const res = await fetch(`${API_BASE_URL}/factories`)
       if (!res.ok) throw new Error('Failed to fetch factories')
       const data = await res.json()
       const normalized = data.map((f: any) => ({
@@ -45,7 +47,7 @@ export const FactoriesTable = () => {
   // -----------------------
   const addFactory = async (payload: { name: string; code: string; location?: string }) => {
     try {
-      const res = await fetch('http://127.0.0.1:8000/factories', {
+      const res = await fetch(`${API_BASE_URL}/factories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -76,7 +78,7 @@ export const FactoriesTable = () => {
   // -----------------------
   const saveEdit = async (id: string) => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/factories/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/factories/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -100,7 +102,9 @@ export const FactoriesTable = () => {
   const deleteFactory = async (id: string) => {
     if (!confirm('Are you sure you want to delete this factory?')) return
     try {
-      const res = await fetch(`http://127.0.0.1:8000/factories/${id}`, { method: 'DELETE' })
+      const res = await fetch(`${API_BASE_URL}/factories/${id}`, {
+        method: 'DELETE'
+      })
       if (!res.ok && res.status !== 204) throw new Error('Failed to delete factory')
       await loadFactories()
     } catch (err: any) {
@@ -136,7 +140,6 @@ export const FactoriesTable = () => {
               <tr key={f.id} className="border-t">
                 <td className="border p-2">{f.id}</td>
 
-                {/* Edit mode */}
                 <td className="border p-2">
                   {editingId === f.id ? (
                     <input 
@@ -148,6 +151,7 @@ export const FactoriesTable = () => {
                     f.name
                   )}
                 </td>
+
                 <td className="border p-2">
                   {editingId === f.id ? (
                     <input 
@@ -160,7 +164,6 @@ export const FactoriesTable = () => {
                   )}
                 </td>
 
-                {/* Actions */}
                 <td className="border p-2 space-x-2">
                   {editingId === f.id ? (
                     <>
