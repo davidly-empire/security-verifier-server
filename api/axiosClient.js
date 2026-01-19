@@ -1,23 +1,15 @@
 import axios from "axios";
 
 const axiosClient = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL,
+  baseURL: "http://127.0.0.1:8000", // backend URL
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 10000,
 });
 
-/* Global response handling */
-axiosClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    console.error(
-      "API Error:",
-      error.response?.data || error.message
-    );
-    return Promise.reject(error);
-  }
-);
+axiosClient.interceptors.request.use((config) => {
+  console.log("Axios Request:", config.method, config.url, config.data);
+  return config;
+});
 
 export default axiosClient;
