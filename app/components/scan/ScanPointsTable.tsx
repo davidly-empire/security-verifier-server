@@ -1,49 +1,20 @@
-// app/dashboard/scan-points/components/ScanPointsTable.tsx
 "use client";
 
 import React from "react";
 import { StatusBadge } from "./StatusBadge";
 
-interface ScanPoint {
+export interface ScanPoint {
   id: string;
-  name: string;
-  code: string;
-  location: {
-    building: string;
-    area: string;
-    floor: string;
-  };
-  status: "Active" | "Inactive";
-  sequenceOrder: number;
-  required: boolean;
-  patrolLogic: {
-    expectedScanTimeWindow: {
-      from: string;
-      to: string;
-    };
-    minimumTimeGap: number;
-  };
-  validationControls: {
-    gpsValidation: boolean;
-    allowedRadius: number;
-    scanCooldown: number;
-    offlineScanAllowed: boolean;
-  };
-  issueReporting: {
-    allowIssueReporting: boolean;
-    issueTypes: string[];
-    photoRequired: "Yes" | "Optional" | "No";
-  };
-  tracking: {
-    lastScannedAt: string;
-    lastScannedBy: string;
-    totalScans: number;
-    missedScans: number;
-  };
-  adminControls: {
-    assignedRoute: string;
-    priorityLevel: "Low" | "Medium" | "High";
-  };
+  factory_id: string;
+  scan_point_code: string;
+  scan_point_name: string;
+  scan_type?: string | null;
+  floor?: string | null;
+  area?: string | null;
+  location?: string | null;
+  risk_level?: "Low" | "Medium" | "High" | null;
+  is_active: boolean;
+  created_at?: string;
 }
 
 interface ScanPointsTableProps {
@@ -57,8 +28,8 @@ export const ScanPointsTable: React.FC<ScanPointsTableProps> = ({
   onEdit,
   onDisable,
 }) => {
-  const getPriorityBadgeColor = (priority: string) => {
-    switch (priority) {
+  const getRiskColor = (risk?: string | null) => {
+    switch (risk) {
       case "High":
         return "bg-red-100 text-red-800";
       case "Medium":
@@ -71,142 +42,69 @@ export const ScanPointsTable: React.FC<ScanPointsTableProps> = ({
   };
 
   return (
-    <div className="bg-white shadow overflow-hidden sm:rounded-md">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+    <div className="bg-white shadow rounded-md overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Factory ID</th>
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Scan Type</th>
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Floor</th>
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Area</th>
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Risk Level</th>
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Created At</th>
+            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody className="bg-white divide-y divide-gray-200">
+          {scanPoints.length === 0 ? (
             <tr>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Name
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Location
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                QR Code ID
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Sequence
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Time Window
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Priority
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Status
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Last Scanned
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Actions
-              </th>
+              <td colSpan={12} className="px-4 py-2 text-center text-sm text-gray-500">
+                No scan points found
+              </td>
             </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {scanPoints.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">
-                  No scan points found
+          ) : (
+            scanPoints.map((sp) => (
+              <tr key={sp.id} className="hover:bg-gray-50">
+                <td className="px-4 py-2 text-sm text-gray-900">{sp.id}</td>
+                <td className="px-4 py-2 text-sm text-gray-900">{sp.factory_id}</td>
+                <td className="px-4 py-2 text-sm text-gray-900">{sp.scan_point_code}</td>
+                <td className="px-4 py-2 text-sm text-gray-900">{sp.scan_point_name}</td>
+                <td className="px-4 py-2 text-sm text-gray-900">{sp.scan_type || "—"}</td>
+                <td className="px-4 py-2 text-sm text-gray-900">{sp.floor || "—"}</td>
+                <td className="px-4 py-2 text-sm text-gray-900">{sp.area || "—"}</td>
+                <td className="px-4 py-2 text-sm text-gray-900">{sp.location || "—"}</td>
+                <td className="px-4 py-2 text-sm">
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getRiskColor(sp.risk_level)}`}>
+                    {sp.risk_level || "—"}
+                  </span>
+                </td>
+                <td className="px-4 py-2 text-sm">
+                  <StatusBadge status={sp.is_active ? "Active" : "Inactive"} />
+                </td>
+                <td className="px-4 py-2 text-sm text-gray-900">
+                  {sp.created_at ? new Date(sp.created_at).toLocaleString() : "—"}
+                </td>
+                <td className="px-4 py-2 text-right text-sm font-medium">
+                  <button onClick={() => onEdit(sp)} className="text-blue-600 hover:text-blue-900 mr-3">
+                    Edit
+                  </button>
+                  {sp.is_active && (
+                    <button onClick={() => onDisable(sp.id)} className="text-red-600 hover:text-red-900">
+                      Disable
+                    </button>
+                  )}
                 </td>
               </tr>
-            ) : (
-              scanPoints.map((scanPoint) => (
-                <tr key={scanPoint.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{scanPoint.name}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">
-                      {scanPoint.location.building} - {scanPoint.location.area}
-                    </div>
-                    <div className="text-xs text-gray-400">{scanPoint.location.floor}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{scanPoint.code}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{scanPoint.sequenceOrder}</div>
-                    <div className="text-xs text-gray-400">
-                      {scanPoint.required ? "Required" : "Optional"}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {scanPoint.patrolLogic.expectedScanTimeWindow.from} -{" "}
-                      {scanPoint.patrolLogic.expectedScanTimeWindow.to}
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      Gap: {scanPoint.patrolLogic.minimumTimeGap} min
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityBadgeColor(
-                        scanPoint.adminControls.priorityLevel
-                      )}`}
-                    >
-                      {scanPoint.adminControls.priorityLevel}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge status={scanPoint.status} />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{scanPoint.tracking.lastScannedAt}</div>
-                    <div className="text-xs text-gray-400">{scanPoint.tracking.lastScannedBy}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => onEdit(scanPoint)}
-                      className="text-blue-600 hover:text-blue-900 mr-3"
-                    >
-                      Edit
-                    </button>
-                    {scanPoint.status === "Active" && (
-                      <button
-                        onClick={() => onDisable(scanPoint.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Disable
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+            ))
+          )}
+        </tbody>
+      </table>
     </div>
   );
 };

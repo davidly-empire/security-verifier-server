@@ -8,7 +8,18 @@ const axiosClient = axios.create({
   timeout: 10000,
 });
 
-/* Global response handling */
+/* 🔹 Request logging (from new crisp version) */
+axiosClient.interceptors.request.use((config) => {
+  console.log(
+    "Axios Request:",
+    config.method?.toUpperCase(),
+    config.url,
+    config.data
+  );
+  return config;
+});
+
+/* 🔹 Global response + error handling (old version) */
 axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {

@@ -2,135 +2,102 @@
 
 import { useEffect, useState } from "react";
 import { ScanPointsTable } from "@/app/components/scan/ScanPointsTable";
-import { ScanPointForm } from "@/app/components/scan/ScanPointForm";
+import { ScanPointForm, ScanPoint } from "@/app/components/scan/ScanPointForm";
 import {
   getScanPointsByFactory,
   createScanPoint,
   updateScanPoint,
 } from "@/api";
 
-interface ScanPoint {
+interface Factory {
   id: string;
   name: string;
-  code: string;
-  location: {
-    building: string;
-    area: string;
-    floor: string;
-  };
-  status: "Active" | "Inactive";
-  sequenceOrder: number;
-  required: boolean;
-  patrolLogic: {
-    expectedScanTimeWindow: {
-      from: string;
-      to: string;
-    };
-    minimumTimeGap: number;
-  };
-  validationControls: {
-    gpsValidation: boolean;
-    allowedRadius: number;
-    scanCooldown: number;
-    offlineScanAllowed: boolean;
-  };
-  issueReporting: {
-    allowIssueReporting: boolean;
-    issueTypes: string[];
-    photoRequired: "Yes" | "Optional" | "No";
-  };
-  tracking: {
-    lastScannedAt: string;
-    lastScannedBy: string;
-    totalScans: number;
-    missedScans: number;
-  };
-  adminControls: {
-    assignedRoute: string;
-    priorityLevel: "Low" | "Medium" | "High";
-  };
 }
 
 export default function ScanPointsPage() {
   const [scanPoints, setScanPoints] = useState<ScanPoint[]>([]);
-  const [filteredScanPoints, setFilteredScanPoints] = useState<ScanPoint[]>([]);
+  const [factories, setFactories] = useState<Factory[]>([]);
+  const [selectedFactory, setSelectedFactory] = useState("");
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingScanPoint, setEditingScanPoint] =
     useState<ScanPoint | null>(null);
 
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [locationFilter, setLocationFilter] = useState("All");
-  const [priorityFilter, setPriorityFilter] = useState("All");
+  const [statusFilter, setStatusFilter] =
+    useState<"All" | "Active" | "Inactive">("All");
 
-  /* =========================
-     FETCH FROM BACKEND
-  ========================== */
+  const [priorityFilter, setPriorityFilter] =
+    useState<"All" | "Low" | "Medium" | "High">("All");
+
+  /* ================= LOAD FACTORIES ================= */
   useEffect(() => {
-    const factoryId = 1; // TODO: replace with selected factory later
-
-    getScanPointsByFactory(factoryId)
-      .then((res) => {
-        setScanPoints(res.data);
-        setFilteredScanPoints(res.data);
-      })
-      .catch((err) => {
-        console.error("Failed to load scan points", err);
+    fetch("http://127.0.0.1:8000/factories/minimal")
+      .then((res) => res.json())
+      .then((data) => {
+        setFactories(data);
+        if (data.length > 0) {
+          setSelectedFactory(data[0].id);
+        }
       });
   }, []);
 
-  /* =========================
-     FILTER LOGIC (UNCHANGED)
-  ========================== */
+  /* ================= LOAD SCAN POINTS ================= */
   useEffect(() => {
-    let data = [...scanPoints];
+    if (!selectedFactory) return;
 
-    if (statusFilter !== "All") {
-      data = data.filter((sp) => sp.status === statusFilter);
-    }
+    getScanPointsByFactory(selectedFactory)
+      .then((res) => {
+        const data: ScanPoint[] = Array.isArray(res.data)
+          ? res.data
+          : res.data?.data ?? [];
 
-    if (locationFilter !== "All") {
-      data = data.filter(
-        (sp) =>
-          `${sp.location.building} - ${sp.location.area}` === locationFilter
-      );
-    }
+        setScanPoints(data);
+      })
+      .catch(() => setScanPoints([]));
+  }, [selectedFactory]);
 
-    if (priorityFilter !== "All") {
-      data = data.filter(
-        (sp) => sp.adminControls.priorityLevel === priorityFilter
-      );
-    }
-
-    setFilteredScanPoints(data);
-  }, [scanPoints, statusFilter, locationFilter, priorityFilter]);
-
-  const uniqueLocations = Array.from(
-    new Set(
-      scanPoints.map(
-        (sp) => `${sp.location.building} - ${sp.location.area}`
-      )
-    )
-  );
+  /* ================= FILTER ================= */
+  const visibleScanPoints = scanPoints.filter((sp) => {
+    if (statusFilter === "Active" && !sp.is_active) return false;
+    if (statusFilter === "Inactive" && sp.is_active) return false;
+    if (priorityFilter !== "All" && sp.risk_level !== priorityFilter)
+      return false;
+    return true;
+  });
 
   return (
     <div className="p-6 min-h-screen bg-gray-50">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Scan Points</h1>
+      {/* HEADER */}
+      <div className="flex justify-between mb-6">
+        <h1 className="text-2xl font-bold">Scan Points</h1>
         <button
           onClick={() => {
             setEditingScanPoint(null);
             setIsFormOpen(true);
           }}
-          className="mt-4 sm:mt-0 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          className="px-4 py-2 bg-blue-600 text-white rounded"
         >
           Add Scan Point
         </button>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+      {/* FILTERS */}
+      <div className="flex gap-4 mb-6">
+        <select
+          value={selectedFactory}
+          onChange={(e) => setSelectedFactory(e.target.value)}
+          className="border p-2 rounded"
+        >
+          {factories.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.name}
+            </option>
+          ))}
+        </select>
+
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => setStatusFilter(e.target.value as any)}
           className="border p-2 rounded"
         >
           <option value="All">All Status</option>
@@ -139,75 +106,60 @@ export default function ScanPointsPage() {
         </select>
 
         <select
-          value={locationFilter}
-          onChange={(e) => setLocationFilter(e.target.value)}
-          className="border p-2 rounded"
-        >
-          <option value="All">All Locations</option>
-          {uniqueLocations.map((loc) => (
-            <option key={loc} value={loc}>
-              {loc}
-            </option>
-          ))}
-        </select>
-
-        <select
           value={priorityFilter}
-          onChange={(e) => setPriorityFilter(e.target.value)}
+          onChange={(e) => setPriorityFilter(e.target.value as any)}
           className="border p-2 rounded"
         >
-          <option value="All">All Priority</option>
+          <option value="All">All Risk Levels</option>
           <option value="Low">Low</option>
           <option value="Medium">Medium</option>
           <option value="High">High</option>
         </select>
       </div>
 
+      {/* TABLE */}
       <ScanPointsTable
-        scanPoints={filteredScanPoints}
-        onEdit={setEditingScanPoint}
+        scanPoints={visibleScanPoints}
+        onEdit={(sp) => {
+          setEditingScanPoint(sp);
+          setIsFormOpen(true);
+        }}
         onDisable={async (id) => {
-          try {
-            await updateScanPoint(id, { status: "Inactive" });
-
-            setScanPoints((prev) =>
-              prev.map((sp) =>
-                sp.id === id ? { ...sp, status: "Inactive" } : sp
-              )
-            );
-          } catch (err) {
-            console.error("Failed to disable scan point", err);
-          }
+          await updateScanPoint(id, { is_active: false });
+          setScanPoints((prev) =>
+            prev.map((sp) =>
+              sp.id === id ? { ...sp, is_active: false } : sp
+            )
+          );
         }}
       />
 
+      {/* FORM */}
       {isFormOpen && (
         <ScanPointForm
           scanPoint={editingScanPoint}
           onClose={() => setIsFormOpen(false)}
           onSubmit={async (data) => {
-            try {
-              if (editingScanPoint) {
-                const res = await updateScanPoint(
-                  editingScanPoint.id,
-                  data
-                );
-
-                setScanPoints((prev) =>
-                  prev.map((sp) =>
-                    sp.id === editingScanPoint.id ? res.data : sp
-                  )
-                );
-              } else {
-                const res = await createScanPoint(data);
-                setScanPoints((prev) => [...prev, res.data]);
-              }
-
-              setIsFormOpen(false);
-              setEditingScanPoint(null);
-            } catch (err) {
-              console.error("Failed to save scan point", err);
+            if (editingScanPoint) {
+              const res = await updateScanPoint(
+                editingScanPoint.id,
+                data
+              );
+              setScanPoints((prev) =>
+                prev.map((sp) =>
+                  sp.id === editingScanPoint.id ? res.data : sp
+                )
+              );
+            } else {
+              const res = await createScanPoint({
+                ...data,
+                factory_id: selectedFactory,
+              });
+              setScanPoints((prev) => [...prev, res.data]);
             }
+
+            setIsFormOpen(false);
+            setEditingScanPoint(null);
           }}
         />
       )}
