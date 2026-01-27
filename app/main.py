@@ -1,15 +1,37 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import auth, admin, factories, scan_points
 
+# -----------------------------
+# Import all routers
+# -----------------------------
+from app.routes import (
+    auth,
+    admin,
+    factories,
+    scan_points,
+    security_users,
+    qr,
+    scanning_details,
+    analytics,
+    report_download
+)
+
+from app.dependencies import get_current_user
+
+# -----------------------------
+# App init
+# -----------------------------
 app = FastAPI(
     title="Security Verifier API",
     version="1.0.0"
 )
 
+# -----------------------------
+# CORS settings
+# -----------------------------
 origins = [
     "http://localhost:3000",
-    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3000"
 ]
 
 app.add_middleware(
@@ -17,11 +39,48 @@ app.add_middleware(
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
 
+# -----------------------------
+# Include routers
+# -----------------------------
+
+# Auth routes → open
 app.include_router(auth.router)
-app.include_router(admin.router)
+
+# Admin routes → JWT required
+app.include_router(
+    admin.router,
+    dependencies=[Depends(get_current_user)]
+)
+
+# Factories → Open
 app.include_router(factories.router)
+
+# Scan Points → Open
 app.include_router(scan_points.router)
 
+# Security Users → Open
+app.include_router(security_users.router)
+
+# QR Codes → Open
+app.include_router(qr.router)
+
+# Scanning Details → Open (mobile scanning)
+app.include_router(scanning_details.router)
+
+# Analytics → Open
+app.include_router(analytics.router)
+
+# ✅ Report Download (Patrol Report)
+app.include_router(report_download.router)
+
+# -----------------------------
+# Root endpoint
+# -----------------------------
+@app.get("/", summary="API Root")
+def root():
+    return {
+        "message": "Security Verifier API is running ✅"
+    }

@@ -15,3 +15,5 @@ class FactoryResponse(BaseModel):
     is_active: Optional[bool] = True
     created_at: Optional[str] = None
 
+    class Config:
+        from_attributes = True
