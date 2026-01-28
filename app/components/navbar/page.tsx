@@ -52,19 +52,19 @@ const Navbar: React.FC = () => {
     <header className="sticky top-0 z-50 w-full bg-white border-b border-slate-200 shadow-sm transition-all duration-300">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
 
-        {/* ================= LOGO (HOME) ================= */}
+        {/* ================= LOGO (LEFT) ================= */}
         <Link
           href="/"
           className="flex items-center gap-2 group"
         >
-          <div className="h-9 w-auto relative overflow-hidden rounded-lg">
+          <div className="relative h-16 w-[160px]">
             <Image
-              src="/SRM_BGLESS.png"
-              alt="SRM Logo"
-              width={190}
-              height={40} 
+              src="/logocomm.png" 
+              alt="Logo"
+              width={160}
+              height={64} 
               priority
-              className="object-contain"
+              style={{ objectFit: 'cover' }}
             />
           </div>
         </Link>
