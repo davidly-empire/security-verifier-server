@@ -1,7 +1,7 @@
 "use client";
 
 import { QRData } from "@/app/api/qr.api";
-import { Eye, Pencil, Power, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 
 export type QRCode = QRData;
 
@@ -9,7 +9,7 @@ interface QrTableProps {
   qrCodes: QRCode[]; 
   onEdit: (qr: QRCode) => void;
   onView: (qr: QRCode) => void;
-  onToggleStatus: (id: number) => void;
+  // Removed onToggleStatus from props
   onDelete: (id: number) => void;
 }
 
@@ -28,7 +28,7 @@ export default function QrTable({
   qrCodes,
   onEdit,
   onView,
-  onToggleStatus,
+  // Removed onToggleStatus
   onDelete,
 }: QrTableProps) {
   return (
@@ -129,17 +129,7 @@ export default function QrTable({
                         <Pencil className="w-4 h-4" />
                       </button>
 
-                      <button
-                        onClick={() => onToggleStatus(qr.qr_id)}
-                        className={`p-1.5 rounded-md hover:bg-opacity-80 transition-all duration-200
-                          ${qr.status === 'active' 
-                            ? 'text-slate-400 hover:text-slate-600 hover:bg-slate-100' 
-                            : 'text-blue-600 hover:text-blue-800 hover:bg-blue-50'
-                          }`}
-                        title={qr.status === 'active' ? 'Disable' : 'Enable'}
-                      >
-                        <Power className="w-4 h-4" />
-                      </button>
+                      {/* Removed Power / Toggle Status Button */}
 
                       <button
                         onClick={() => onDelete(qr.qr_id)}
