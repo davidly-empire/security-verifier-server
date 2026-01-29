@@ -14,18 +14,15 @@ const Navbar = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
 
+  // Updated and reordered navigation items
   const navItems = [
-    { name: 'Dashboard', href: '/dashboard' },
-    { name: 'Scanpoints', href: '/scan-points' },
-    { name: 'QR', href: '/dashboard/qr-crud' },
-    { name: 'Security Analytics', href: '/analytics/security_analytics' },
-    { name: 'Users Management', href: '/user-crud' },
     { name: 'Reports', href: '/report-download' },
+    { name: 'Users Management', href: '/user-crud' },
+    { name: 'QR', href: '/dashboard/qr-crud' },
     { name: 'Factories', href: '/factory' },
   ]
 
   const isActive = (href: string) => {
-    if (href === '/dashboard') return pathname === '/' || pathname === '/dashboard'
     return pathname === href
   }
 
@@ -64,7 +61,11 @@ const Navbar = () => {
               >
                 {/* FLUID ACTIVE PILL */}
                 {isActive(item.href) && (
-                  <motion.div layoutId="nav-pill" className="absolute inset-0 bg-gray-100 rounded-full" transition={{ type: "spring", stiffness: 380, damping: 30 }} />
+                  <motion.div 
+                    layoutId="nav-pill" 
+                    className="absolute inset-0 bg-gray-100 rounded-full" 
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }} 
+                  />
                 )}
                 <span className={`px-4 py-2 text-sm font-medium rounded-full z-10 transition-colors ${isActive(item.href) ? 'text-[#080883]' : 'text-gray-600 hover:text-[#080883]'}`}>
                   {item.name}
