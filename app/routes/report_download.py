@@ -22,15 +22,15 @@ def download_report(
 
     try:
 
-        # ====================================
+        # ==============================
         # 1. Generate rounds
-        # ====================================
+        # ==============================
         round_slots = generate_round_slots(report_date)
 
 
-        # ====================================
-        # 2. Get QR codes
-        # ====================================
+        # ==============================
+        # 2. Fetch QR codes
+        # ==============================
         qr_codes = (
             db.table("qr")
             .select("qr_id, qr_name")
@@ -40,9 +40,9 @@ def download_report(
         )
 
 
-        # ====================================
-        # 3. Get scans
-        # ====================================
+        # ==============================
+        # 3. Fetch scan logs
+        # ==============================
         scans = (
             db.table("scanning_details")
             .select("id, qr_id, guard_name, scan_time, lat, log, status, round_slot")
@@ -54,9 +54,9 @@ def download_report(
         )
 
 
-        # ====================================
-        # 4. Parse round_slot → datetime
-        # ====================================
+        # ==============================
+        # 4. Parse round_slot
+        # ==============================
         for s in scans:
 
             rs = s.get("round_slot")
@@ -75,9 +75,9 @@ def download_report(
             s["round_dt"] = dt
 
 
-        # ====================================
+        # ==============================
         # 5. Build report
-        # ====================================
+        # ==============================
         report = []
 
 
@@ -88,7 +88,6 @@ def download_report(
 
             for round_no, start_dt, end_dt in round_slots:
 
-                # Match by qr_id + round_slot
                 scan = next(
                     (
                         s for s in scans
@@ -123,7 +122,6 @@ def download_report(
 
                     "lat": scan.get("lat") if scan else None,
 
-                    # DB uses "log" as longitude
                     "lon": scan.get("log") if scan else None,
 
                     "guard_name": scan.get("guard_name") if scan else None,
