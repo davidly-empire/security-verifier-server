@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 
 // -----------------------------
 // Types
@@ -7,24 +7,38 @@ export interface PatrolReportItem {
   qr_name: string;
   round: number;
   scan_time: string | null;
+
   lat: string | null;
-  log: string | null;
+  lon: string | null; // ✅ FIXED (was log)
+
   guard_name: string | null;
-  status: "SUCCESS" | "FAILED";
+
+  // Backend normalized
+  status: "SUCCESS" | "MISSED";
 }
 
-// In case backend sends wrapped response
+
+// Optional wrapped response
 interface WrappedResponse {
   success?: boolean;
   data?: PatrolReportItem[];
   message?: string;
 }
 
+
 // -----------------------------
 // API Config
 // -----------------------------
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
+
+// Axios instance (stable)
+const api = axios.create({
+  baseURL: BASE_URL,
+  timeout: 15000, // 15s timeout
+});
+
 
 // -----------------------------
 // API Function
@@ -33,9 +47,13 @@ export async function getPatrolReport(
   factoryCode: string,
   reportDate: string
 ): Promise<PatrolReportItem[]> {
+
   try {
-    const response = await axios.get<PatrolReportItem[] | WrappedResponse>(
-      `${BASE_URL}/report/download`,
+
+    const response = await api.get<
+      PatrolReportItem[] | WrappedResponse
+    >(
+      "/report/download",
       {
         params: {
           factory_code: factoryCode,
@@ -46,23 +64,35 @@ export async function getPatrolReport(
 
     const result = response.data;
 
-    // ✅ Case 1: backend returns ARRAY directly
+
+    // Case 1: Direct array
     if (Array.isArray(result)) {
       return result;
     }
 
-    // ✅ Case 2: backend returns { success, data }
-    if (result && Array.isArray(result.data)) {
+
+    // Case 2: Wrapped response
+    if (result?.data && Array.isArray(result.data)) {
       return result.data;
     }
 
+
     console.error("❌ Unexpected patrol report response:", result);
+
     return [];
-  } catch (error: any) {
+
+  } catch (err) {
+
+    const error = err as AxiosError<any>;
+
     console.error(
       "❌ Error fetching patrol report:",
-      error?.response?.data || error.message
+      error.response?.data || error.message
     );
-    throw error;
+
+    throw new Error(
+      error.response?.data?.message ||
+      "Unable to fetch patrol report"
+    );
   }
 }
