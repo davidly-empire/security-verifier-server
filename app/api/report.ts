@@ -9,12 +9,12 @@ export interface PatrolReportItem {
   scan_time: string | null;
 
   lat: string | null;
-  lon: string | null; // ✅ FIXED (was log)
+  lon: string | null;
 
   guard_name: string | null;
 
-  // Backend normalized
-  status: "SUCCESS" | "MISSED";
+  // ✅ Added PENDING
+  status: "SUCCESS" | "MISSED" | "PENDING";
 }
 
 
@@ -33,10 +33,10 @@ const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 
-// Axios instance (stable)
+// Axios instance
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 15000, // 15s timeout
+  timeout: 15000,
 });
 
 
