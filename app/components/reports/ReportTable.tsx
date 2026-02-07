@@ -21,7 +21,7 @@ export interface ScanLog {
   lat?: string;
   lon?: string;
 
-  status?: "SUCCESS" | "MISSED";
+  status?: string;
 
   [key: string]: any;
 }
@@ -50,8 +50,38 @@ interface ReportTableProps {
 // ===============================
 const ReportTable: React.FC<ReportTableProps> = ({ logs, loading }) => {
 
-  // Debug
   console.log("REPORT LOGS:", logs);
+
+
+  // ===============================
+  // Status Normalizer (SAME AS PDF)
+  // ===============================
+  const normalizeStatus = (
+    status?: string | null,
+    scanTime?: string | null
+  ): "SUCCESS" | "MISSED" | "PROGRESS" => {
+
+    // If no time → PROGRESS
+    if (!scanTime) return "PROGRESS";
+
+    if (!status) return "PROGRESS";
+
+    const s = status.toLowerCase().trim();
+
+    if (
+      s === "success" ||
+      s === "completed" ||
+      s === "done"
+    ) {
+      return "SUCCESS";
+    }
+
+    if (s === "missed") {
+      return "MISSED";
+    }
+
+    return "PROGRESS";
+  };
 
 
   // -------------------------------
@@ -116,7 +146,7 @@ const ReportTable: React.FC<ReportTableProps> = ({ logs, loading }) => {
 
 
   // -------------------------------
-  // Filter Logs (Only 1 → 33)
+  // Filter Logs
   // -------------------------------
   const validLogs = useMemo(() => {
     return logs.filter(
@@ -136,7 +166,6 @@ const ReportTable: React.FC<ReportTableProps> = ({ logs, loading }) => {
       const bValue = b[sortConfig.key];
 
 
-      // Date sort
       if (sortConfig.key === "scan_time") {
 
         const dateA = aValue ? new Date(aValue as string).getTime() : 0;
@@ -148,7 +177,6 @@ const ReportTable: React.FC<ReportTableProps> = ({ logs, loading }) => {
       }
 
 
-      // Normal sort
       if (!aValue || !bValue) return 0;
 
       if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
@@ -191,26 +219,43 @@ const ReportTable: React.FC<ReportTableProps> = ({ logs, loading }) => {
 
 
     // Date
-    if (key === "scan_time" && value) {
+    if (key === "scan_time") {
+
+      if (!value) return "—";
+
       return new Date(value as string).toLocaleString();
     }
 
 
-    // Status
+    // ================= Status (UPDATED) =================
     if (key === "status") {
 
-      const status = value === "SUCCESS" ? "SUCCESS" : "MISSED";
+      const finalStatus = normalizeStatus(
+        row.status,
+        row.scan_time
+      );
 
-      const color =
-        status === "SUCCESS"
-          ? "bg-green-100 text-green-800"
-          : "bg-red-100 text-red-800";
+
+      let color = "";
+
+      if (finalStatus === "SUCCESS") {
+        color = "bg-green-100 text-green-800";
+      }
+
+      if (finalStatus === "MISSED") {
+        color = "bg-red-100 text-red-800";
+      }
+
+      if (finalStatus === "PROGRESS") {
+        color = "bg-orange-100 text-orange-800";
+      }
+
 
       return (
         <span
           className={`px-2 py-1 rounded-full text-xs font-semibold ${color}`}
         >
-          {status}
+          {finalStatus}
         </span>
       );
     }
@@ -252,7 +297,6 @@ const ReportTable: React.FC<ReportTableProps> = ({ logs, loading }) => {
 
           const roundNumber = Number(roundKey);
 
-          // Skip invalid rounds
           if (!ROUND_TIMES[roundNumber]) return null;
 
           const roundLogs = logsByRound[roundNumber];
