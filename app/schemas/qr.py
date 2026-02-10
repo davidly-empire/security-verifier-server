@@ -11,6 +11,7 @@ class QRCreate(BaseModel):
     lon: Optional[float] = None
     status: Optional[str] = "active"
     factory_code: Optional[str] = None
+    waiting_time: Optional[int] = 15  # ✅ ADDED: Default 15 seconds
 
 
 # 🟡 UPDATE (qr_id NOT editable)
@@ -20,6 +21,7 @@ class QRUpdate(BaseModel):
     lon: Optional[float] = None
     status: Optional[str] = None
     factory_code: Optional[str] = None
+    waiting_time: Optional[int] = None  # ✅ ADDED: Allow updating wait time
 
 
 # 🔵 RESPONSE

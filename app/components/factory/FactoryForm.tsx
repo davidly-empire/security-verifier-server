@@ -2,12 +2,15 @@
 
 import { useState, useEffect } from 'react'
 
-/* ✅ THIS TYPE MATCHES FactoriesTable EXACTLY */
+
+/* ✅ UPDATED TYPE */
 export interface FactoryFormData {
   name: string
   code: string
   location?: string
+  address?: string   // ✅ ADD
 }
+
 
 interface Props {
   onSubmit: (data: FactoryFormData) => void
@@ -15,25 +18,36 @@ interface Props {
   onCancel?: () => void
 }
 
+
 export const FactoryForm = ({
   onSubmit,
   initialData,
   onCancel,
 }: Props) => {
+
+
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [location, setLocation] = useState('')
+  const [address, setAddress] = useState('')   // ✅ ADD
 
-  // Pre-fill form for edit
+
+  // Prefill
   useEffect(() => {
+
     if (initialData) {
+
       setName(initialData.name)
       setCode(initialData.code)
       setLocation(initialData.location || '')
+      setAddress(initialData.address || '')
     }
+
   }, [initialData])
 
+
   const handleSubmit = (e: React.FormEvent) => {
+
     e.preventDefault()
 
     if (!name || !code) {
@@ -41,87 +55,135 @@ export const FactoryForm = ({
       return
     }
 
-    onSubmit({ name, code, location })
+    onSubmit({
+      name,
+      code,
+      location,
+      address,    // ✅ SEND ADDRESS
+    })
+
 
     if (!initialData) {
+
       setName('')
       setCode('')
       setLocation('')
+      setAddress('')
     }
   }
 
+
+
   return (
+
     <form
       onSubmit={handleSubmit}
       className="space-y-6"
     >
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
-        
-        {/* Factory Name Input (Takes up 5 cols) */}
-        <div className="md:col-span-5">
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">
+
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+
+
+        {/* NAME */}
+        <div className="md:col-span-4">
+
+          <label className="block text-xs font-bold mb-2">
             Factory Name
           </label>
+
           <input
             type="text"
-            placeholder="e.g. North Warehouse"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full bg-white border border-slate-200 text-slate-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-300 transition-all placeholder:text-slate-400"
+            className="w-full border rounded px-3 py-2"
+            placeholder="Factory name"
           />
+
         </div>
 
-        {/* Factory Code Input (Takes up 3 cols) */}
-        <div className="md:col-span-3">
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">
+
+        {/* CODE */}
+        <div className="md:col-span-2">
+
+          <label className="block text-xs font-bold mb-2">
             Code
           </label>
+
           <input
             type="text"
-            placeholder="e.g. F-01"
             value={code}
             onChange={(e) => setCode(e.target.value)}
             disabled={!!initialData}
-            className="w-full bg-white border border-slate-200 text-slate-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-300 transition-all placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
+            className="w-full border rounded px-3 py-2"
+            placeholder="F001"
           />
+
         </div>
 
-        {/* Location Input (Takes up 4 cols) */}
-        <div className="md:col-span-4">
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">
-            Location (Optional)
+
+        {/* LOCATION */}
+        <div className="md:col-span-3">
+
+          <label className="block text-xs font-bold mb-2">
+            Location
           </label>
+
           <input
             type="text"
-            placeholder="e.g. Building A"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            className="w-full bg-white border border-slate-200 text-slate-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-300 transition-all placeholder:text-slate-400"
+            className="w-full border rounded px-3 py-2"
+            placeholder="City / Area"
           />
+
         </div>
+
+
+        {/* ADDRESS */}
+        <div className="md:col-span-3">
+
+          <label className="block text-xs font-bold mb-2">
+            Address
+          </label>
+
+          <input
+            type="text"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            className="w-full border rounded px-3 py-2"
+            placeholder="Full address"
+          />
+
+        </div>
+
       </div>
 
-      <div className="flex items-center gap-3 pt-2">
+
+      {/* BUTTONS */}
+      <div className="flex gap-3">
+
         <button
           type="submit"
-          className="px-6 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-200 flex items-center gap-2"
+          className="bg-blue-600 text-white px-6 py-2 rounded"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-          </svg>
-          {initialData ? 'Update Factory' : 'Add Factory'}
+          {initialData ? 'Update' : 'Add'}
         </button>
 
+
         {initialData && onCancel && (
+
           <button
             type="button"
             onClick={onCancel}
-            className="px-6 py-2.5 bg-white border border-slate-300 text-slate-600 font-bold text-sm rounded-xl hover:bg-slate-50 hover:text-slate-800 transition-all duration-200"
+            className="border px-6 py-2 rounded"
           >
             Cancel
           </button>
+
         )}
+
       </div>
+
     </form>
   )
 }

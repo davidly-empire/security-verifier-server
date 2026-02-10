@@ -20,6 +20,7 @@ const Navbar = () => {
     { name: 'Users Management', href: '/user-crud' },
     { name: 'QR', href: '/dashboard/qr-crud' },
     { name: 'Factories', href: '/factory' },
+    { name: 'Download App', href: 'https://drive.google.com/file/d/1Oo7J1pmQvwb2ANvkryuO5lAdWbFr5V1R' }, // New Item Added
   ]
 
   const isActive = (href: string) => {
@@ -52,27 +53,38 @@ const Navbar = () => {
 
         {/* DESKTOP NAV */}
         <nav className="hidden min-[1051px]:flex items-center gap-1 rounded-full bg-white px-2 py-1 shadow-sm relative overflow-visible">
-          {navItems.map((item) => (
-            <Link key={item.name} href={item.href} className="relative z-10">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center"
+          {navItems.map((item) => {
+            // Check if link is external to handle opening in new tab
+            const isExternal = item.href.startsWith('http');
+            
+            return (
+              <Link 
+                key={item.name} 
+                href={item.href} 
+                target={isExternal ? '_blank' : undefined}
+                rel={isExternal ? 'noopener noreferrer' : undefined}
+                className="relative z-10"
               >
-                {/* FLUID ACTIVE PILL */}
-                {isActive(item.href) && (
-                  <motion.div 
-                    layoutId="nav-pill" 
-                    className="absolute inset-0 bg-gray-100 rounded-full" 
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }} 
-                  />
-                )}
-                <span className={`px-4 py-2 text-sm font-medium rounded-full z-10 transition-colors ${isActive(item.href) ? 'text-[#080883]' : 'text-gray-600 hover:text-[#080883]'}`}>
-                  {item.name}
-                </span>
-              </motion.div>
-            </Link>
-          ))}
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center"
+                >
+                  {/* FLUID ACTIVE PILL */}
+                  {isActive(item.href) && (
+                    <motion.div 
+                      layoutId="nav-pill" 
+                      className="absolute inset-0 bg-gray-100 rounded-full" 
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }} 
+                    />
+                  )}
+                  <span className={`px-4 py-2 text-sm font-medium rounded-full z-10 transition-colors ${isActive(item.href) ? 'text-[#080883]' : 'text-gray-600 hover:text-[#080883]'}`}>
+                    {item.name}
+                  </span>
+                </motion.div>
+              </Link>
+            )
+          })}
 
           {/* USER AVATAR */}
           <div className="relative ml-1 z-50" ref={userMenuRef}>
@@ -111,16 +123,22 @@ const Navbar = () => {
             className="max-[1050px]:block hidden border-t bg-white overflow-hidden"
           >
             <div className="px-4 py-4 space-y-3">
-              {navItems.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={`block rounded-md px-3 py-2 font-medium ${isActive(item.href) ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'}`}
-                >
-                  {item.name}
-                </Link>
-              ))}
+              {navItems.map((item) => {
+                const isExternal = item.href.startsWith('http');
+
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    target={isExternal ? '_blank' : undefined}
+                    rel={isExternal ? 'noopener noreferrer' : undefined}
+                    onClick={() => !isExternal && setIsMobileMenuOpen(false)} // Don't close menu if opening in new tab
+                    className={`block rounded-md px-3 py-2 font-medium ${isActive(item.href) ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'}`}
+                  >
+                    {item.name}
+                  </Link>
+                )
+              })}
               <div className="border-t pt-3">
                 <button onClick={() => router.push('/login')} className="block w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700">Login</button>
                 <button className="block w-full text-left px-3 py-2 text-red-600 hover:bg-red-50">Log out</button>
