@@ -9,6 +9,7 @@ export interface QRData {
   factory_code: string;
   status?: string;
   created_at?: string;
+  waiting_time?: number; // ✅ ADDED
 }
 
 // ----------------- Factory Data -----------------
@@ -19,35 +20,29 @@ export interface Factory {
 
 // ----------------- CREATE QR -----------------
 export const createQR = async (data: QRData): Promise<QRData> => {
-  // Removed token parameter and headers
   const res = await axiosClient.post("/qr/", data);
-  return res.data;
+  return res.data; // Expects Object
 };
 
 // ----------------- GET QR BY FACTORY -----------------
 export const fetchQRByFactory = async (factoryCode: string): Promise<QRData[]> => {
-  // Removed token parameter and headers
   const res = await axiosClient.get(`/qr/factory/${factoryCode}`);
   return res.data;
 };
 
 // ----------------- UPDATE QR -----------------
 export const updateQR = async (qrId: number, data: Partial<QRData>): Promise<QRData> => {
-  // Removed token parameter and headers
   const res = await axiosClient.put(`/qr/${qrId}`, data);
-  // Supabase returns an array of updated rows
-  return res.data[0];
+  return res.data[0]; // Expects Array
 };
 
 // ----------------- DELETE QR -----------------
 export const deleteQR = async (qrId: number): Promise<void> => {
-  // Removed token parameter and headers
   await axiosClient.delete(`/qr/${qrId}`);
 };
 
 // ----------------- FETCH FACTORIES -----------------
 export const fetchFactories = async (): Promise<Factory[]> => {
-  // Removed token parameter and headers
   const res = await axiosClient.get("/factories");
   return res.data;
 };
