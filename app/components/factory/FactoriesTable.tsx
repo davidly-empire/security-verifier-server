@@ -7,84 +7,75 @@ interface Factory {
   id: string
   name: string
   location?: string
+  address?: string
 }
 
 export const FactoriesTable = () => {
+
+  // --- LOGIC (UNCHANGED) ---
   const [factories, setFactories] = useState<Factory[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
-  
-  // Local state for inline editing
+
   const [editName, setEditName] = useState('')
   const [editLocation, setEditLocation] = useState('')
+  const [editAddress, setEditAddress] = useState('')
 
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api'
+  const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_URL || '/api'
 
-  /* ================= API HANDLERS ================= */
-  
   const loadFactories = async () => {
     setLoading(true)
     setError('')
     try {
-      const url = `${API_BASE_URL}/factories`
-      console.log(`Fetching from: ${url}`) 
-      
-      const res = await fetch(url)
-      
-      if (!res.ok) {
-        const errorText = await res.text()
-        console.error(`API Error ${res.status}:`, errorText)
-        throw new Error(`Failed to fetch factories (Status: ${res.status})`)
-      }
-
+      const res = await fetch(`${API_BASE_URL}/factories`)
+      if (!res.ok) throw new Error('Fetch failed')
       const data = await res.json()
-
-      if (!Array.isArray(data)) {
-        console.error('API response is not an array:', data)
-        throw new Error('Invalid data format received from server')
-      }
-
       const normalized = data.map((f: any) => ({
         id: f.factory_code,
         name: f.factory_name,
-        location: f.location || ''
+        location: f.location || '',
+        address: f.factory_address || ''
       }))
-      
       setFactories(normalized)
     } catch (err: any) {
       console.error(err)
-      setError(err.message || 'Something went wrong')
+      setError(err.message)
     } finally {
       setLoading(false)
     }
   }
 
-  const addFactory = async (payload: { name: string; code: string; location?: string }) => {
+  const addFactory = async (payload: {
+    name: string
+    code: string
+    location?: string
+    address?: string
+  }) => {
     try {
       const res = await fetch(`${API_BASE_URL}/factories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          factory_name: payload.name, 
+        body: JSON.stringify({
+          factory_name: payload.name,
           factory_code: payload.code,
-          location: payload.location || ''
+          location: payload.location || '',
+          factory_address: payload.address || '',
         }),
       })
-      
-      if (!res.ok) throw new Error(`Failed to create factory (Status: ${res.status})`)
-      
+      if (!res.ok) throw new Error('Create failed')
       await loadFactories()
     } catch (err: any) {
-      console.error(err)
-      alert(err.message || 'Failed to add factory')
+      alert(err.message)
     }
   }
 
-  const startEdit = (factory: Factory) => {
-    setEditingId(factory.id)
-    setEditName(factory.name)
-    setEditLocation(factory.location || '')
+  const startEdit = (f: Factory) => {
+    setEditingId(f.id)
+    setEditName(f.name)
+    setEditLocation(f.location || '')
+    setEditAddress(f.address || '')
   }
 
   const saveEdit = async (id: string) => {
@@ -92,208 +83,243 @@ export const FactoriesTable = () => {
       const res = await fetch(`${API_BASE_URL}/factories/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          factory_name: editName, 
-          factory_code: id, 
-          location: editLocation
+        body: JSON.stringify({
+          factory_name: editName,
+          factory_code: id,
+          location: editLocation,
+          factory_address: editAddress,
         }),
       })
-      
-      if (!res.ok) throw new Error(`Failed to update factory (Status: ${res.status})`)
-      
+      if (!res.ok) throw new Error('Update failed')
       setEditingId(null)
       await loadFactories()
     } catch (err: any) {
-      console.error(err)
-      alert(err.message || 'Failed to update factory')
+      alert(err.message)
     }
   }
 
   const deleteFactory = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this factory?')) return
+    if (!confirm('Are you sure you want to delete this factory? This action cannot be undone.')) return
     try {
       const res = await fetch(`${API_BASE_URL}/factories/${id}`, {
         method: 'DELETE'
       })
-      
-      if (!res.ok && res.status !== 204) throw new Error(`Failed to delete factory (Status: ${res.status})`)
-      
+      if (!res.ok && res.status !== 204) {
+        throw new Error('Delete failed')
+      }
       await loadFactories()
     } catch (err: any) {
-      console.error(err)
-      alert(err.message || 'Failed to delete factory')
+      alert(err.message)
     }
   }
 
   useEffect(() => {
     loadFactories()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+  // --- END LOGIC ---
+
 
   /* ================= UI COMPONENTS ================= */
 
-  // Professional Input for Inline Editing
-  const InlineInput = ({ value, onChange, placeholder }: { value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, placeholder?: string }) => (
-    <input 
-      value={value} 
-      onChange={onChange} 
+  const InlineInput = ({
+    value,
+    onChange,
+    placeholder
+  }: {
+    value: string
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+    placeholder?: string
+  }) => (
+    <input
+      value={value}
+      onChange={onChange}
       placeholder={placeholder}
-      className="w-full bg-slate-50 border border-slate-300 text-slate-700 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
+      className="block w-full rounded-md border-0 py-1.5 px-3 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 bg-white"
       autoFocus
     />
   )
 
-  // Premium Action Button Group
-  const EditActions = ({ onSave, onCancel }: { onSave: () => void, onCancel: () => void }) => (
-    <div className="flex items-center gap-2">
-      <button 
-        onClick={onSave} 
-        className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-md shadow-sm transition-colors flex items-center gap-1"
-      >
-        Save
-      </button>
-      <button 
-        onClick={onCancel} 
-        className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-600 text-xs font-bold rounded-md transition-colors"
-      >
-        Cancel
-      </button>
-    </div>
-  )
-
-  // Standard Action Button Group
-  const RowActions = ({ onEdit, onDelete }: { onEdit: () => void, onDelete: () => void }) => (
-    <div className="flex items-center gap-2">
-      <button 
-        onClick={onEdit} 
-        className="text-slate-500 hover:text-blue-600 hover:bg-blue-50 px-2 py-1 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1"
-      >
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-        Edit
-      </button>
-      <button 
-        onClick={onDelete} 
-        className="text-slate-500 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1"
-      >
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-        Delete
-      </button>
-    </div>
-  )
-
-  /* ================= RENDER ================= */
   return (
-    <div className="space-y-6 w-full max-w-7xl mx-auto">
-      
-      {/* FORM SECTION */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-shadow duration-300">
-        <h3 className="text-lg font-bold text-slate-800 mb-4">Add New Factory</h3>
-        <FactoryForm onSubmit={addFactory} />
-      </div>
-
-      {/* ERROR ALERT */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3 animate-pulse">
-          <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <strong className="font-bold">System Error:</strong>
-            <span className="block sm:inline"> {error}</span>
+    <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl space-y-8">
+        
+        {/* Header */}
+        <div className="md:flex md:items-center md:justify-between">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">
+              Factories Management
+            </h2>
           </div>
         </div>
-      )}
 
-      {/* TABLE SECTION */}
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        {/* Form Card */}
+        <div className="overflow-hidden rounded-lg bg-white shadow ring-1 ring-slate-900/5">
+          <div className="border-b border-slate-200/80 bg-white px-6 py-5">
+            <h3 className="text-lg font-medium leading-6 text-slate-900">
+              Add New Factory
+            </h3>
+            <p className="mt-1 max-w-2xl text-sm text-slate-500">
+              Create a new factory entry by filling out the details below.
+            </p>
+          </div>
+          <div className="px-6 py-6">
+            <FactoryForm onSubmit={addFactory} />
+          </div>
         </div>
-      ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          
-          {/* TABLE HEADER */}
-          <table className="min-w-full divide-y divide-slate-100">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Factory Code</th>
-                <th className="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Factory Name</th>
-                <th className="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Location</th>
-                <th className="px-6 py-4 text-right text-[11px] font-bold text-slate-400 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
 
-            {/* TABLE BODY */}
-            <tbody className="bg-white divide-y divide-slate-100">
-              {factories.length === 0 && !error ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-16 text-center">
-                    <div className="flex flex-col items-center">
-                      <div className="bg-slate-50 p-3 rounded-full mb-3">
-                        <svg className="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                      </div>
-                      <p className="text-sm font-medium text-slate-600">No factories found</p>
-                      <p className="text-xs text-slate-400">Use the form above to add your first factory.</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                factories.map((f) => (
-                  <tr key={f.id} className="hover:bg-slate-50 transition-colors duration-150 group">
-                    {/* ID Column */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2.5 py-1 text-xs font-mono font-bold text-blue-600 bg-blue-50 rounded border border-blue-100">
-                        {f.id}
-                      </span>
-                    </td>
+        {/* Error Alert */}
+        {error && (
+          <div className="rounded-md bg-red-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Error loading data</h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>{error}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-                    {/* Name Column */}
-                    <td className="px-6 py-4">
-                      {editingId === f.id ? (
-                        <InlineInput 
-                          value={editName} 
-                          onChange={(e) => setEditName(e.target.value)} 
-                          placeholder="Factory Name"
-                        />
-                      ) : (
-                        <span className="text-sm font-medium text-slate-800">{f.name}</span>
-                      )}
-                    </td>
-
-                    {/* Location Column */}
-                    <td className="px-6 py-4">
-                      {editingId === f.id ? (
-                        <InlineInput 
-                          value={editLocation} 
-                          onChange={(e) => setEditLocation(e.target.value)} 
-                          placeholder="Location"
-                        />
-                      ) : (
-                        <span className="text-sm text-slate-600">{f.location || "—"}</span>
-                      )}
-                    </td>
-
-                    {/* Actions Column */}
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      {editingId === f.id ? (
-                        <EditActions 
-                          onSave={() => saveEdit(f.id)} 
-                          onCancel={() => setEditingId(null)} 
-                        />
-                      ) : (
-                        <RowActions 
-                          onEdit={() => startEdit(f)} 
-                          onDelete={() => deleteFactory(f.id)} 
-                        />
-                      )}
-                    </td>
+        {/* Table Card */}
+        <div className="overflow-hidden rounded-lg bg-white shadow ring-1 ring-slate-900/5">
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="flex flex-col items-center">
+                <svg className="h-8 w-8 animate-spin text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="mt-2 text-sm text-slate-500">Loading factories...</p>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Code
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Name
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Location
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Address
+                    </th>
+                    <th scope="col" className="relative px-6 py-3 text-right">
+                      <span className="sr-only">Actions</span>
+                    </th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                </thead>
+                <tbody className="divide-y divide-slate-200 bg-white">
+                  {factories.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center text-sm text-slate-500">
+                        No factories found. Add one to get started.
+                      </td>
+                    </tr>
+                  ) : (
+                    factories.map((f) => (
+                      <tr key={f.id} className="transition-colors duration-200 hover:bg-slate-50">
+                        {/* Code */}
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-mono text-slate-600">
+                          {f.id}
+                        </td>
+
+                        {/* Name */}
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-900">
+                          {editingId === f.id ? (
+                            <InlineInput
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              placeholder="Factory Name"
+                            />
+                          ) : (
+                            <span className="block truncate max-w-[200px]" title={f.name}>{f.name}</span>
+                          )}
+                        </td>
+
+                        {/* Location */}
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
+                          {editingId === f.id ? (
+                            <InlineInput
+                              value={editLocation}
+                              onChange={(e) => setEditLocation(e.target.value)}
+                              placeholder="Location"
+                            />
+                          ) : (
+                            f.location || <span className="text-slate-300">—</span>
+                          )}
+                        </td>
+
+                        {/* Address */}
+                        <td className="px-6 py-4 text-sm text-slate-600">
+                          {editingId === f.id ? (
+                            <InlineInput
+                              value={editAddress}
+                              onChange={(e) => setEditAddress(e.target.value)}
+                              placeholder="Factory Address"
+                            />
+                          ) : (
+                            <div className="max-w-xs truncate" title={f.address || ''}>
+                              {f.address || <span className="text-slate-300">—</span>}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                          {editingId === f.id ? (
+                            <div className="flex items-center justify-end space-x-3">
+                              <button
+                                onClick={() => saveEdit(f.id)}
+                                className="text-emerald-600 hover:text-emerald-900 font-medium transition-colors"
+                              >
+                                Save
+                              </button>
+                              <span className="text-slate-300">|</span>
+                              <button
+                                onClick={() => setEditingId(null)}
+                                className="text-slate-500 hover:text-slate-700 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-end space-x-4">
+                              <button
+                                onClick={() => startEdit(f)}
+                                className="text-indigo-600 hover:text-indigo-900 transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => deleteFactory(f.id)}
+                                className="text-rose-600 hover:text-rose-900 transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   )
 }
