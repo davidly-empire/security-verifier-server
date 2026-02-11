@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, Text, Float, TIMESTAMP, ForeignKey
 from sqlalchemy.sql import func
 from app.database import Base
 
+
 class QR(Base):
     __tablename__ = "qr"
 
@@ -19,3 +20,6 @@ class QR(Base):
         ForeignKey("factories.factory_code"),
         nullable=True
     )
+
+    # ✅ NEW FIELD — Waiting Time (in minutes)
+    waiting_time = Column(Integer, nullable=False)

@@ -5,17 +5,27 @@ TABLE = "qr"
 
 # ---------------- CREATE ----------------
 def create_qr(data: dict):
+    """
+    Create a new QR.
+    Ensures waiting_time is valid and never null.
+    """
 
-    # Default waiting time
-    if "waiting_time" not in data:
+    # ✅ Default waiting_time if missing
+    if "waiting_time" not in data or data["waiting_time"] is None:
         data["waiting_time"] = 15
 
-    return insert_row(TABLE, data)[0]
+    # ✅ Prevent negative waiting time
+    if not isinstance(data["waiting_time"], int) or data["waiting_time"] < 0:
+        raise ValueError("waiting_time must be a non-negative integer")
+
+    inserted = insert_row(TABLE, data)
+
+    return inserted[0] if inserted else None
 
 
 # ---------------- READ BY FACTORY ----------------
 def get_qr_by_factory(factory_code: str):
-    return select_rows(TABLE, {"factory_code": factory_code})
+    return select_rows(TABLE, {"factory_code": factory_code}) or []
 
 
 # ---------------- READ BY ID ----------------
@@ -26,10 +36,20 @@ def get_qr_by_id(qr_id: int):
 
 # ---------------- UPDATE ----------------
 def update_qr(qr_id: int, data: dict):
+    """
+    Update QR details.
+    """
 
-    # Prevent null waiting time
-    if "waiting_time" in data and data["waiting_time"] is None:
-        data["waiting_time"] = 15
+    # ✅ Handle waiting_time validation if provided
+    if "waiting_time" in data:
+
+        # If explicitly set to None → default
+        if data["waiting_time"] is None:
+            data["waiting_time"] = 15
+
+        # Prevent negative values
+        if not isinstance(data["waiting_time"], int) or data["waiting_time"] < 0:
+            raise ValueError("waiting_time must be a non-negative integer")
 
     updated = update_row(
         TABLE,
