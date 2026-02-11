@@ -1,160 +1,178 @@
 import os
+from typing import Dict, Any, List, Optional
 from supabase import create_client, Client
-from typing import Optional
 
-# =========================================================
-# Supabase Client Initialization
-# =========================================================
-
+# --------------------------------------------------
+# ENV CONFIG
+# --------------------------------------------------
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+# Try to use Service Role Key (full admin access) first, fall back to Anon key
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
 
 if not SUPABASE_URL:
-    raise RuntimeError("❌ SUPABASE_URL is not set in environment")
-if not SUPABASE_KEY:
-    raise RuntimeError("❌ SUPABASE_KEY is not set in environment")
+    raise RuntimeError("SUPABASE_URL missing")
 
-# Create the client immediately so it can be imported as 'supabase'
+if not SUPABASE_KEY:
+    raise RuntimeError("SUPABASE_KEY missing")
+
+# --------------------------------------------------
+# SUPABASE CLIENT
+# --------------------------------------------------
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def get_supabase_client() -> Client:
-    """
-    Returns the initialized Supabase client.
-    """
+def get_db() -> Client:
     return supabase
 
+# --------------------------------------------------
+# TABLE NAMES
+# --------------------------------------------------
+SCANNING_TABLE = "scan_logs"
+QR_TABLE = "qr"
 
-# =========================================================
-# FastAPI Dependency
-# =========================================================
-
-def get_db() -> Client:
+# --------------------------------------------------
+# GENERIC HELPERS
+# --------------------------------------------------
+def insert_row(table: str, data: Dict[str, Any]) -> Dict:
     """
-    FastAPI dependency.
-    Returns Supabase client (NOT SQLAlchemy session)
+    Insert one row
     """
-    return get_supabase_client()
+    res = supabase.table(table).insert(data).execute()
 
+    if not res.data:
+        raise RuntimeError(f"Insert failed: {res}")
 
-# =========================================================
-# Generic Supabase Helpers
-# =========================================================
+    return res.data[0]
 
-def get_table(table_name: str):
-    return get_supabase_client().table(table_name)
-
-
-def insert_row(table_name: str, data: dict):
-    try:
-        response = get_supabase_client().table(table_name).insert(data).execute()
-        return response.data if hasattr(response, "data") else None
-    except Exception as e:
-        print(f"❌ Insert Error [{table_name}]:", e)
-        return None
-
-
-def select_rows(table_name: str, filters: dict | None = None):
-    query = get_supabase_client().table(table_name).select("*")
+def select_rows(
+    table: str,
+    filters: Optional[Dict[str, Any]] = None
+) -> List[Dict]:
+    """
+    Select rows with optional filters
+    """
+    query = supabase.table(table).select("*")
 
     if filters:
-        for key, value in filters.items():
-            query = query.eq(key, value)
+        for key, val in filters.items():
+            query = query.eq(key, val)
 
-    try:
-        response = query.execute()
-        return response.data if hasattr(response, "data") else []
-    except Exception as e:
-        print(f"❌ Select Error [{table_name}]:", e)
+    res = query.execute()
+
+    if not res.data:
         return []
 
+    return res.data
 
-def update_row(table_name: str, row_id: int, data: dict, id_column: str = "id"):
-    try:
-        response = (
-            get_supabase_client()
-            .table(table_name)
-            .update(data)
-            .eq(id_column, row_id)
-            .execute()
-        )
-        return response.data if hasattr(response, "data") else None
-    except Exception as e:
-        print(f"❌ Update Error [{table_name}]:", e)
-        return None
+def update_row(
+    table: str,
+    filters: Dict[str, Any],
+    data: Dict[str, Any]
+) -> Dict:
+    """
+    Update rows using filters. Returns the first updated row.
+    """
+    if not data:
+        raise ValueError("No data provided for update")
 
+    query = supabase.table(table).update(data)
 
-def delete_row(table_name: str, row_id: int, id_column: str = "id"):
-    try:
-        response = (
-            get_supabase_client()
-            .table(table_name)
-            .delete()
-            .eq(id_column, row_id)
-            .execute()
-        )
-        return response.data if hasattr(response, "data") else None
-    except Exception as e:
-        print(f"❌ Delete Error [{table_name}]:", e)
-        return None
+    for key, val in filters.items():
+        query = query.eq(key, val)
 
+    res = query.execute()
 
-# =========================================================
-# Scanning Details Helpers
-# =========================================================
+    if not res.data:
+        raise RuntimeError(f"Update failed: {res}")
 
-SCANNING_TABLE = "scanning_details"
+    return res.data[0]
 
+def delete_row(
+    table: str,
+    filters: Dict[str, Any]
+) -> bool:
+    """
+    Delete rows using filters
+    """
+    query = supabase.table(table).delete()
 
-def create_scan_log(data: dict):
-    """Insert scan data into scanning_details table"""
+    for key, val in filters.items():
+        query = query.eq(key, val)
+
+    res = query.execute()
+
+    return bool(res.data)
+
+# --------------------------------------------------
+# SCAN LOG HELPERS
+# --------------------------------------------------
+def create_scan_log(data: Dict[str, Any]) -> Dict:
     return insert_row(SCANNING_TABLE, data)
 
+def get_all_scan_logs() -> List[Dict]:
+    return select_rows(SCANNING_TABLE)
 
-def get_all_scan_logs():
-    """Fetch all scan logs"""
-    try:
-        response = (
-            get_supabase_client()
-            .table(SCANNING_TABLE)
-            .select("*")
-            .execute()
-        )
-        return response.data if hasattr(response, "data") else []
-    except Exception as e:
-        print(f"❌ Select All Scan Logs Error:", e)
-        return []
+def get_scan_logs_by_factory(factory_code: str) -> List[Dict]:
+    return select_rows(
+        SCANNING_TABLE,
+        {"factory_code": factory_code}
+    )
 
+def get_scan_logs_by_guard(guard_name: str) -> List[Dict]:
+    return select_rows(
+        SCANNING_TABLE,
+        {"guard_name": guard_name}
+    )
 
-def get_scan_logs_by_factory(factory_code: str):
-    """Fetch scan logs filtered by factory_code"""
-    return select_rows(SCANNING_TABLE, {"factory_code": factory_code})
+def delete_scan_log(scan_id: int) -> bool:
+    return delete_row(
+        SCANNING_TABLE,
+        {"id": scan_id}
+    )
 
-
-def get_scan_logs_by_guard(guard_name: str):
-    """Fetch scan logs filtered by guard name"""
-    return select_rows(SCANNING_TABLE, {"guard_name": guard_name})
-
-
-def get_scan_logs_by_factory_and_date(factory_code: str, report_date: str):
+# --------------------------------------------------
+# QR HELPERS
+# --------------------------------------------------
+def create_qr(data: Dict[str, Any]) -> Dict:
     """
-    Fetch scan logs filtered by factory_code and date (YYYY-MM-DD)
+    Create a QR. Ensures waiting_time has a value.
     """
-    try:
-        response = (
-            get_supabase_client()
-            .table(SCANNING_TABLE)
-            .select("*")
-            .eq("factory_code", factory_code)
-            .gte("scan_time", f"{report_date}T00:00:00")
-            .lte("scan_time", f"{report_date}T23:59:59")
-            .execute()
-        )
-        return response.data if hasattr(response, "data") else []
-    except Exception as e:
-        print("❌ Scan Logs by Factory/Date Error:", e)
-        return []
+    # If key is missing OR explicitly null (from empty frontend input), default to 15
+    if "waiting_time" not in data or data["waiting_time"] is None:
+        data["waiting_time"] = 15
 
+    return insert_row(QR_TABLE, data)
 
-def delete_scan_log(scan_id: int):
-    """Delete scan log by ID"""
-    return delete_row(SCANNING_TABLE, scan_id)
+def get_qrs(filters: Optional[Dict[str, Any]] = None) -> List[Dict]:
+    return select_rows(QR_TABLE, filters)
+
+def get_qr_by_id(qr_id: int) -> Optional[Dict]:
+    rows = select_rows(
+        QR_TABLE,
+        {"qr_id": qr_id}
+    )
+    return rows[0] if rows else None
+
+def update_qr(qr_id: int, data: Dict[str, Any]) -> Dict:
+    """
+    Update a QR.
+    CRITICAL FIX: Only sets default waiting_time IF the key is present in the payload.
+    If the key is missing (e.g. user is only updating 'name'), we do NOT overwrite
+    the existing waiting_time in the database.
+    """
+    # Only modify if 'waiting_time' is part of the update payload
+    if "waiting_time" in data:
+        if data["waiting_time"] is None:
+            data["waiting_time"] = 15
+
+    return update_row(
+        QR_TABLE,
+        {"qr_id": qr_id},
+        data
+    )
+
+def delete_qr(qr_id: int) -> bool:
+    return delete_row(
+        QR_TABLE,
+        {"qr_id": qr_id}
+    )
