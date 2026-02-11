@@ -10,11 +10,11 @@ from app.routes import (
     auth,
     admin,
     factories,
+    report,
     scan_points,
     security_users,
     qr,
-    scanning_details,
-    report_download
+    scanning_details
 )
 
 # Dependency for JWT authentication
@@ -74,7 +74,7 @@ app.include_router(qr.router)
 app.include_router(scanning_details.router)
 
 # 📄 Report Download (Patrol Report)
-app.include_router(report_download.router)
+app.include_router(report.router)
 
 # -----------------------------
 # Root endpoint
