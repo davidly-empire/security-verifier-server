@@ -1,6 +1,11 @@
 import os
 from typing import Dict, Any, List, Optional
 from supabase import create_client, Client
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
 
 # --------------------------------------------------
 # ENV CONFIG

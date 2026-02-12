@@ -20,6 +20,7 @@ from app.routes import (
 # Dependency for JWT authentication
 from app.dependencies import get_current_user
 
+
 # -----------------------------
 # Initialize FastAPI app
 # -----------------------------
@@ -29,21 +30,18 @@ app = FastAPI(
     description="Backend API for Security Verifier system"
 )
 
-# -----------------------------
-# CORS settings
-# -----------------------------
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
 
+# -----------------------------
+# CORS (FIXED - DEV MODE)
+# -----------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"],        # Allow all origins (DEV only)
+    allow_credentials=False,   # Must be False when using "*"
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # -----------------------------
 # Include routers
@@ -76,14 +74,12 @@ app.include_router(scanning_details.router)
 # 📄 Report Download (Patrol Report)
 app.include_router(report.router)
 
+
 # -----------------------------
 # Root endpoint
 # -----------------------------
 @app.get("/", summary="API Root")
 def root():
-    """
-    Root endpoint to verify API is running
-    """
     return {
         "message": "Security Verifier API is running ✅"
     }
